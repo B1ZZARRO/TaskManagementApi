@@ -24,7 +24,7 @@ namespace AssistantApi.Controllers
         /// Авторизация
         /// </summary>
         [Route("[action]")]
-        [HttpGet]
+        [HttpPost]
         public ActionResult Auth(UserData userData)
         {
             try
