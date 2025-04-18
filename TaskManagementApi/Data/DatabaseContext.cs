@@ -19,6 +19,10 @@ namespace TaskManagementApi.Data
         public DbSet<Task> Tasks { get; set; }
         public DbSet<TaskAssignment> TaskAssignments { get; set; }
         public DbSet<UserTaskSummary> UserTaskSummaries { get; set; }
+        public DbSet<StorageItem> StorageItems { get; set; }
+        public DbSet<StorageMovement> StorageMovements { get; set; }
+        public DbSet<Device> Devices { get; set; }
+        public DbSet<DeviceComponent> DeviceComponents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -126,6 +130,72 @@ namespace TaskManagementApi.Data
                 .HasOne(uts => uts.User)
                 .WithMany()
                 .HasForeignKey(uts => uts.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Настройка storage_ITEM
+            modelBuilder.Entity<StorageItem>()
+                .HasKey(w => w.ItemId);
+
+            modelBuilder.Entity<StorageItem>()
+                .Property(w => w.ItemName)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            modelBuilder.Entity<StorageItem>()
+                .Property(w => w.Quantity)
+                .HasDefaultValue(0);
+
+            // Настройка storage_MOVEMENT
+            modelBuilder.Entity<StorageMovement>()
+                .HasKey(m => m.MovementId);
+
+            modelBuilder.Entity<StorageMovement>()
+                .Property(m => m.MovementType)
+                .IsRequired();
+
+            modelBuilder.Entity<StorageMovement>()
+                .Property(m => m.MovementDate)
+                .IsRequired();
+
+            modelBuilder.Entity<StorageMovement>()
+                .HasOne(m => m.Item)
+                .WithMany()
+                .HasForeignKey(m => m.ItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<StorageMovement>()
+                .HasOne(m => m.Task)
+                .WithMany()
+                .HasForeignKey(m => m.RelatedTaskId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Настройка DEVICE
+            modelBuilder.Entity<Device>()
+                .HasKey(d => d.DeviceId);
+
+            modelBuilder.Entity<Device>()
+                .Property(d => d.DeviceName)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            modelBuilder.Entity<Device>()
+                .Property(d => d.DeviceModel)
+                .HasMaxLength(255);
+
+            // Настройка DEVICE_COMPONENT
+            modelBuilder.Entity<DeviceComponent>()
+                .HasKey(c => c.ComponentId);
+
+            modelBuilder.Entity<DeviceComponent>()
+                .HasOne(c => c.Device)
+                .WithMany()
+                .HasForeignKey(c => c.DeviceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<DeviceComponent>()
+                .HasOne(c => c.Item)
+                .WithMany()
+                .HasForeignKey(c => c.ItemId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

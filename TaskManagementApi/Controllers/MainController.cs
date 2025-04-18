@@ -446,7 +446,8 @@ namespace TaskManagementApi.Controllers
         /// <summary>
         /// Получение списка всех пользователей.
         /// </summary>
-        [HttpGet("GetAllUsers")]
+        [Route("GetAllUsers")]
+        [HttpGet]
         public IActionResult GetAllUsers()
         {
             try
@@ -481,7 +482,8 @@ namespace TaskManagementApi.Controllers
         /// <summary>
         /// Получение списка всех ролей.
         /// </summary>
-        [HttpGet("GetAllRoles")]
+        [Route("GetAllRoles")]
+        [HttpGet]
         public IActionResult GetAllRoles()
         {
             try
@@ -505,7 +507,8 @@ namespace TaskManagementApi.Controllers
         /// <summary>
         /// Получение списка всех групп.
         /// </summary>
-        [HttpGet("GetAllGroups")]
+        [Route("GetAllGroups")]
+        [HttpGet]
         public IActionResult GetAllGroups()
         {
             try
@@ -529,7 +532,8 @@ namespace TaskManagementApi.Controllers
         /// <summary>
         /// Изменение пользователя по ID.
         /// </summary>
-        [HttpPut("UpdateUser/{id}")]
+        [Route("UpdateUser/{id}")]
+        [HttpPut]
         public IActionResult UpdateUser(int id, [FromBody] UserData userData)
         {
             try
@@ -558,6 +562,169 @@ namespace TaskManagementApi.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Произошла ошибка при обновлении пользователя.", error = ex.Message });
+            }
+        }
+        
+        /// <summary>
+        /// Получение всех складских позиций
+        /// </summary>
+        [Route("GetAllItems")]
+        [HttpGet]
+        public IActionResult GetAllItems()
+        {
+            try
+            {
+                var items = _context.StorageItems
+                    .Select(i => new ItemsData()
+                        {
+                            ItemId = i.ItemId,
+                            ItemName = i.ItemName,
+                            ItemType = i.ItemType,
+                            Quantity = i.Quantity
+                        }
+                        ).ToList();
+                return Ok(new ApiResponse<List<ItemsData>>(items));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponseMessage(ex.Message));
+            }
+        }
+
+        // Добавление движения товара (приход/расход)
+        [Route("movement")]
+        [HttpPost]
+        public IActionResult AddMovement([FromBody] StorageMovement movement)
+        {
+            try
+            {
+                movement.MovementDate = DateTime.Now;
+                _context.StorageMovements.Add(movement);
+
+                var item = _context.StorageItems.FirstOrDefault(i => i.ItemId == movement.ItemId);
+                if (item == null)
+                    return NotFound("Складская позиция не найдена");
+
+                if (movement.MovementType == "incoming")
+                {
+                    item.Quantity += movement.Quantity;
+                }
+                else if (movement.MovementType == "outgoing")
+                {
+                    if (item.Quantity < movement.Quantity)
+                        return BadRequest("Недостаточно товара на складе");
+                    item.Quantity -= movement.Quantity;
+                }
+
+                _context.SaveChanges();
+                return Ok("Движение добавлено");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Получение истории движения по товару
+        /// </summary>
+        [Route("GetItemHistory/{itemId}")]
+        [HttpGet]
+        public IActionResult GetItemHistory(int itemId)
+        {
+            try
+            {
+                var history = _context.StorageMovements
+                    .Where(m => m.ItemId == itemId)
+                    .Include(m => m.Task)
+                    .OrderByDescending(m => m.MovementDate)
+                    .Select(m => new MovementData
+                    {
+                        MovementId = m.MovementId,
+                        ItemId = m.ItemId,
+                        MovementType = m.MovementType,
+                        Quantity = m.Quantity,
+                        MovementDate = m.MovementDate,
+                        RelatedTaskId = m.RelatedTaskId
+                    })
+                    .ToList();
+
+                return Ok(new ApiResponse<IEnumerable<MovementData>>(history));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponseMessage(ex.Message));
+            }
+        }
+        
+        // Получение всех устройств
+        [Route("all")]
+        [HttpGet]
+        public IActionResult GetAllDevices()
+        {
+            try
+            {
+                var devices = _context.Devices
+                    .Select(d => new DeviceData()
+                        {
+                            DeviceId = d.DeviceId,
+                            DeviceName = d.DeviceName,
+                            DeviceModel = d.DeviceModel
+                        }
+                    ).ToList();
+                return Ok(new ApiResponse<List<DeviceData>>(devices));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponseMessage(ex.Message));
+            }
+        }
+
+        // Получение компонентов устройства
+        [Route("components/{deviceId}")]
+        [HttpGet]
+        public IActionResult GetDeviceComponents(int deviceId)
+        {
+            var components = _context.DeviceComponents
+                .Where(c => c.DeviceId == deviceId)
+                .Include(c => c.Item)
+                .ToList();
+
+            return Ok(components);
+        }
+
+        // Добавление нового устройства и компонентов
+        [Route("add")]
+        [HttpPost]
+        public IActionResult AddDeviceWithComponents([FromBody] DeviceData model)
+        {
+            try
+            {
+                var device = new Device
+                {
+                    DeviceName = model.DeviceName,
+                    DeviceModel = model.DeviceModel
+                };
+
+                _context.Devices.Add(device);
+                _context.SaveChanges();
+
+                foreach (var comp in model.Components)
+                {
+                    _context.DeviceComponents.Add(new DeviceComponent
+                    {
+                        DeviceId = device.DeviceId,
+                        ItemId = comp.ItemId,
+                        QuantityNeeded = comp.QuantityNeeded
+                    });
+                }
+
+                _context.SaveChanges();
+                return Ok("Устройство и компоненты добавлены");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
     }
