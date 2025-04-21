@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskManagementApi.Data.Models
@@ -15,5 +16,7 @@ namespace TaskManagementApi.Data.Models
 
         [Column("device_model")]
         public string DeviceModel { get; set; }
+        
+        public ICollection<DeviceComponent> Components { get; set; }
     }
 }

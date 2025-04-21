@@ -29,8 +29,10 @@ namespace TaskManagementApi.ViewModels
 
     public class ComponentData
     {
-        public int ItemId { get; set; }
-        public int QuantityNeeded { get; set; }
+        public int ComponentId { get; set; }
+        public string ComponentName { get; set; }
+        public int DeviceId { get; set; }
+        public List<ComponentItemData> Items { get; set; }
     }
 
     public class ItemsData
@@ -39,5 +41,50 @@ namespace TaskManagementApi.ViewModels
         public string ItemName { get; set; }
         public string ItemType { get; set; }
         public int Quantity { get; set; }
+        public List<ComponentData> Components { get; set; }
+    }
+
+    public class ComponentItemData
+    {
+        public int ItemId { get; set; }
+        public string ItemName { get; set; }
+        public string ItemType { get; set; }
+        public int QuantityOnStorage { get; set; }
+        public int QuantityNeeded { get; set; }
+    }
+    
+    
+    public class AddDeviceWithComponentIdsModel
+    {
+        public string DeviceName { get; set; }
+        public string DeviceModel { get; set; }
+        public List<int> ComponentIds { get; set; }
+    }
+    
+    public class ComponentItemInputModel
+    {
+        public int ItemId { get; set; }
+        public int QuantityNeeded { get; set; }
+    }
+    public class AddComponentModel
+    {
+        public int DeviceId { get; set; }
+        public string ComponentName { get; set; }
+        public List<ComponentItemInputModel> Items { get; set; }
+    }
+    
+    public class AddStorageItemModel
+    {
+        public string ItemName { get; set; }
+        public string ItemType { get; set; }
+        public int Quantity { get; set; }
+    }
+    
+    public class AddMovementModel
+    {
+        public int ItemId { get; set; }
+        public string MovementType { get; set; }
+        public int Quantity { get; set; }
+        public int? RelatedTaskId { get; set; }
     }
 }

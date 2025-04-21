@@ -344,8 +344,6 @@ namespace TaskManagementApi.Controllers
         /// <summary>
         /// Получение списка пользователей по номеру группы
         /// </summary>
-        /// <param name="groupId">Идентификатор группы</param>
-        /// <returns>Список пользователей</returns>
         [Route("users/by-group")]
         [HttpGet]
         public IActionResult GetUsersByGroupId(int groupId)
@@ -389,8 +387,6 @@ namespace TaskManagementApi.Controllers
         /// <summary>
         /// Получение списка задач, назначенных пользователям определенной группы
         /// </summary>
-        /// <param name="groupId">Идентификатор группы</param>
-        /// <returns>Список задач</returns>
         [Route("tasks/by-group")]
         [HttpGet]
         public IActionResult GetTasksByGroupId(int groupId)
@@ -591,37 +587,49 @@ namespace TaskManagementApi.Controllers
             }
         }
 
-        // Добавление движения товара (приход/расход)
+        /// <summary>
+        /// Добавление движения товара (приход/расход)
+        /// </summary>
         [Route("movement")]
         [HttpPost]
-        public IActionResult AddMovement([FromBody] StorageMovement movement)
+        public IActionResult AddMovement([FromBody] AddMovementModel model)
         {
             try
             {
-                movement.MovementDate = DateTime.Now;
-                _context.StorageMovements.Add(movement);
-
-                var item = _context.StorageItems.FirstOrDefault(i => i.ItemId == movement.ItemId);
+                var item = _context.StorageItems.FirstOrDefault(i => i.ItemId == model.ItemId);
                 if (item == null)
-                    return NotFound("Складская позиция не найдена");
+                    return NotFound(new ApiResponseMessage("Деталь не найдена"));
 
-                if (movement.MovementType == "incoming")
-                {
-                    item.Quantity += movement.Quantity;
-                }
-                else if (movement.MovementType == "outgoing")
-                {
-                    if (item.Quantity < movement.Quantity)
-                        return BadRequest("Недостаточно товара на складе");
-                    item.Quantity -= movement.Quantity;
-                }
+                if (model.MovementType != "incoming" && model.MovementType != "outgoing")
+                    return BadRequest(new ApiResponseMessage("Тип движения должен быть 'incoming' или 'outgoing'"));
 
+                if (model.Quantity <= 0)
+                    return BadRequest(new ApiResponseMessage("Количество должно быть больше 0"));
+
+                if (model.MovementType == "outgoing" && item.Quantity < model.Quantity)
+                    return BadRequest(new ApiResponseMessage("Недостаточно деталей на складе"));
+
+                // Обновление количества
+                item.Quantity += model.MovementType == "incoming" ? model.Quantity : -model.Quantity;
+
+                // Создание записи движения
+                var movement = new StorageMovement
+                {
+                    ItemId = model.ItemId,
+                    MovementType = model.MovementType,
+                    Quantity = model.Quantity,
+                    MovementDate = DateTime.Now,
+                    RelatedTaskId = model.RelatedTaskId
+                };
+
+                _context.StorageMovements.Add(movement);
                 _context.SaveChanges();
-                return Ok("Движение добавлено");
+
+                return Ok(new ApiResponseMessage("Движение успешно зарегистрировано"));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new ApiResponseMessage(ex.Message));
             }
         }
 
@@ -657,8 +665,10 @@ namespace TaskManagementApi.Controllers
             }
         }
         
-        // Получение всех устройств
-        [Route("all")]
+        /// <summary>
+        /// Получение всех устройств
+        /// </summary>
+        [Route("GetAllDevices")]
         [HttpGet]
         public IActionResult GetAllDevices()
         {
@@ -680,51 +690,163 @@ namespace TaskManagementApi.Controllers
             }
         }
 
-        // Получение компонентов устройства
-        [Route("components/{deviceId}")]
+        /// <summary>
+        /// Получение компонентов устройства
+        /// </summary>
+        [Route("GetDeviceComponents/{deviceId}")]
         [HttpGet]
         public IActionResult GetDeviceComponents(int deviceId)
         {
-            var components = _context.DeviceComponents
-                .Where(c => c.DeviceId == deviceId)
-                .Include(c => c.Item)
-                .ToList();
+            try
+            {
+                var device = _context.Devices.FirstOrDefault(d => d.DeviceId == deviceId);
+                if (device == null)
+                    return NotFound(new ApiResponseMessage("Устройство не найдено"));
 
-            return Ok(components);
+                var components = _context.DeviceComponents
+                    .Where(c => c.DeviceId == deviceId)
+                    .Select(c => new ComponentData
+                    {
+                        ComponentId = c.ComponentId,
+                        ComponentName = c.ComponentName,
+                        DeviceId = c.DeviceId,
+                        Items = _context.ComponentItems
+                            .Where(ci => ci.ComponentId == c.ComponentId)
+                            .Include(ci => ci.Item)
+                            .Select(ci => new ComponentItemData
+                            {
+                                ItemId = ci.Item.ItemId,
+                                ItemName = ci.Item.ItemName,
+                                ItemType = ci.Item.ItemType,
+                                QuantityOnStorage = ci.Item.Quantity,
+                                QuantityNeeded = ci.QuantityNeeded
+                            }).ToList()
+                    })
+                    .ToList();
+
+                return Ok(new
+                {
+                    body = components,
+                    message = "Ok"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponseMessage(ex.Message));
+            }
         }
 
-        // Добавление нового устройства и компонентов
-        [Route("add")]
+        /// <summary>
+        ///  Добавление нового устройства
+        /// </summary>
+        [Route("AddDeviceWithComponents")]
         [HttpPost]
-        public IActionResult AddDeviceWithComponents([FromBody] DeviceData model)
+        public IActionResult AddDeviceWithComponents([FromBody] AddDeviceWithComponentIdsModel model)
         {
             try
             {
+                // Создание устройства
                 var device = new Device
                 {
                     DeviceName = model.DeviceName,
                     DeviceModel = model.DeviceModel
                 };
-
                 _context.Devices.Add(device);
                 _context.SaveChanges();
 
-                foreach (var comp in model.Components)
+                // Обновляем компоненты: присваиваем device_id
+                foreach (var compId in model.ComponentIds)
                 {
-                    _context.DeviceComponents.Add(new DeviceComponent
+                    var component = _context.DeviceComponents.FirstOrDefault(c => c.ComponentId == compId);
+                    if (component != null)
                     {
-                        DeviceId = device.DeviceId,
-                        ItemId = comp.ItemId,
-                        QuantityNeeded = comp.QuantityNeeded
+                        component.DeviceId = device.DeviceId;
+                    }
+                }
+
+                _context.SaveChanges();
+                return Ok(new ApiResponseMessage("Устройство создано и компоненты привязаны"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponseMessage(ex.Message));
+            }
+        }
+        
+        /// <summary>
+        /// Добавление нового компонента
+        /// </summary>
+        [Route("AddComponentWithItems")]
+        [HttpPost]
+        public IActionResult AddComponentWithItems([FromBody] AddComponentModel model)
+        {
+            try
+            {
+                // Проверка существования устройства
+                var device = _context.Devices.FirstOrDefault(d => d.DeviceId == model.DeviceId);
+                if (device == null)
+                    return NotFound(new ApiResponseMessage("Устройство не найдено"));
+
+                // Создаём компонент
+                var component = new DeviceComponent
+                {
+                    DeviceId = model.DeviceId,
+                    ComponentName = model.ComponentName
+                };
+                _context.DeviceComponents.Add(component);
+                _context.SaveChanges();
+
+                // Привязываем детали
+                foreach (var item in model.Items)
+                {
+                    _context.ComponentItems.Add(new ComponentItem
+                    {
+                        ComponentId = component.ComponentId,
+                        ItemId = item.ItemId,
+                        QuantityNeeded = item.QuantityNeeded
                     });
                 }
 
                 _context.SaveChanges();
-                return Ok("Устройство и компоненты добавлены");
+                return Ok(new ApiResponseMessage("Компонент успешно добавлен и детали назначены"));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new ApiResponseMessage(ex.Message));
+            }
+        }
+        
+        /// <summary>
+        /// Создание новой детали
+        /// </summary>
+        [Route("AddStorageItem")]
+        [HttpPost]
+        public IActionResult AddStorageItem([FromBody] AddStorageItemModel model)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(model.ItemName))
+                    return BadRequest(new ApiResponseMessage("Название детали не может быть пустым"));
+
+                var item = new StorageItem
+                {
+                    ItemName = model.ItemName,
+                    ItemType = model.ItemType,
+                    Quantity = model.Quantity
+                };
+
+                _context.StorageItems.Add(item);
+                _context.SaveChanges();
+
+                return Ok(new
+                {
+                    message = "Деталь успешно добавлена",
+                    itemId = item.ItemId
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponseMessage(ex.Message));
             }
         }
     }

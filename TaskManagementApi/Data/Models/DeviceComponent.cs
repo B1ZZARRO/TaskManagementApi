@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskManagementApi.Data.Models
@@ -12,17 +13,13 @@ namespace TaskManagementApi.Data.Models
 
         [Column("device_id")]
         public int DeviceId { get; set; }
-
-        [Column("item_id")]
-        public int ItemId { get; set; }
-
-        [Column("quantity_needed")]
-        public int QuantityNeeded { get; set; }
+        
+        [Column("component_name")]
+        public string ComponentName { get; set; }
 
         [ForeignKey("DeviceId")]
         public Device Device { get; set; }
 
-        [ForeignKey("ItemId")]
-        public StorageItem Item { get; set; }
+        public ICollection<ComponentItem> ComponentItems { get; set; }
     }
 }

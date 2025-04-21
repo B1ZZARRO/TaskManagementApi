@@ -23,6 +23,7 @@ namespace TaskManagementApi.Data
         public DbSet<StorageMovement> StorageMovements { get; set; }
         public DbSet<Device> Devices { get; set; }
         public DbSet<DeviceComponent> DeviceComponents { get; set; }
+        public DbSet<ComponentItem> ComponentItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -132,20 +133,20 @@ namespace TaskManagementApi.Data
                 .HasForeignKey(uts => uts.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
             
-            // Настройка storage_ITEM
+            // Настройка StorageItem
             modelBuilder.Entity<StorageItem>()
-                .HasKey(w => w.ItemId);
+                .HasKey(i => i.ItemId);
 
             modelBuilder.Entity<StorageItem>()
-                .Property(w => w.ItemName)
+                .Property(i => i.ItemName)
                 .IsRequired()
                 .HasMaxLength(255);
 
             modelBuilder.Entity<StorageItem>()
-                .Property(w => w.Quantity)
+                .Property(i => i.Quantity)
                 .HasDefaultValue(0);
 
-            // Настройка storage_MOVEMENT
+           // Настройка StorageMovement
             modelBuilder.Entity<StorageMovement>()
                 .HasKey(m => m.MovementId);
 
@@ -169,7 +170,7 @@ namespace TaskManagementApi.Data
                 .HasForeignKey(m => m.RelatedTaskId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Настройка DEVICE
+            // Настройка Device
             modelBuilder.Entity<Device>()
                 .HasKey(d => d.DeviceId);
 
@@ -182,20 +183,34 @@ namespace TaskManagementApi.Data
                 .Property(d => d.DeviceModel)
                 .HasMaxLength(255);
 
-            // Настройка DEVICE_COMPONENT
+            // Настройка DeviceComponent
             modelBuilder.Entity<DeviceComponent>()
                 .HasKey(c => c.ComponentId);
 
             modelBuilder.Entity<DeviceComponent>()
+                .Property(c => c.ComponentName)
+                .IsRequired();
+
+            modelBuilder.Entity<DeviceComponent>()
                 .HasOne(c => c.Device)
-                .WithMany()
+                .WithMany(d => d.Components)
                 .HasForeignKey(c => c.DeviceId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<DeviceComponent>()
-                .HasOne(c => c.Item)
-                .WithMany()
-                .HasForeignKey(c => c.ItemId)
+            // Настройка ComponentItem
+            modelBuilder.Entity<ComponentItem>()
+                .HasKey(ci => ci.ComponentItemId);
+
+            modelBuilder.Entity<ComponentItem>()
+                .HasOne(ci => ci.Component)
+                .WithMany(c => c.ComponentItems)
+                .HasForeignKey(ci => ci.ComponentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ComponentItem>()
+                .HasOne(ci => ci.Item)
+                .WithMany(i => i.ComponentItems)
+                .HasForeignKey(ci => ci.ItemId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
