@@ -24,7 +24,12 @@ namespace TaskManagementApi.ViewModels
         public int DeviceId { get; set; }
         public string DeviceName { get; set; }
         public string DeviceModel { get; set; }
-        public List<ComponentData> Components { get; set; }
+    }
+    
+    public class UpdateDeviceModel
+    {
+        public string DeviceName { get; set; }
+        public string DeviceModel { get; set; }
     }
 
     public class ComponentData
@@ -41,7 +46,12 @@ namespace TaskManagementApi.ViewModels
         public string ItemName { get; set; }
         public string ItemType { get; set; }
         public int Quantity { get; set; }
-        public List<ComponentData> Components { get; set; }
+    }
+    
+    public class UpdateComponentModel
+    {
+        public string ComponentName { get; set; }
+        public int? DeviceId { get; set; }
     }
 
     public class ComponentItemData
@@ -52,7 +62,6 @@ namespace TaskManagementApi.ViewModels
         public int QuantityOnStorage { get; set; }
         public int QuantityNeeded { get; set; }
     }
-    
     
     public class AddDeviceWithComponentIdsModel
     {
@@ -78,6 +87,12 @@ namespace TaskManagementApi.ViewModels
         public string ItemName { get; set; }
         public string ItemType { get; set; }
         public int Quantity { get; set; }
+    }
+    
+    public class UpdateStorageItemModel
+    {
+        public string ItemName { get; set; }
+        public string ItemType { get; set; }
     }
     
     public class AddMovementModel

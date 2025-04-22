@@ -11,7 +11,6 @@ namespace TaskManagementApi.ViewModels
     
     public class TaskAssignmentData1
     {
-        // Информация о задаче
         public int TaskId { get; set; }
         public string TaskTitle { get; set; }
         public string TaskDescription { get; set; }

@@ -21,4 +21,15 @@ namespace TaskManagementApi.ViewModels
         public int? AssignedGroupId { get; set; }
         public string GroupName { get; set; }
     }
+    
+    public class UpdateTaskData
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public DateTime? Deadline { get; set; }
+        public int? PriorityId { get; set; }
+        public int? StatusId { get; set; }
+        public DateTime? CompletionDate { get; set; }
+        public string ResultsNotes { get; set; }
+    }
 }
