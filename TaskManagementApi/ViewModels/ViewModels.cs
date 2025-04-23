@@ -37,6 +37,7 @@ namespace TaskManagementApi.ViewModels
         public int ComponentId { get; set; }
         public string ComponentName { get; set; }
         public int DeviceId { get; set; }
+        public int? AssemblyTimeMinutes { get; set; } 
         public List<ComponentItemData> Items { get; set; }
     }
 
@@ -52,6 +53,7 @@ namespace TaskManagementApi.ViewModels
     {
         public string ComponentName { get; set; }
         public int? DeviceId { get; set; }
+        public int? AssemblyTimeMinutes { get; set; } 
     }
 
     public class ComponentItemData
@@ -79,6 +81,7 @@ namespace TaskManagementApi.ViewModels
     {
         public int DeviceId { get; set; }
         public string ComponentName { get; set; }
+        public int AssemblyTimeMinutes { get; set; }   
         public List<ComponentItemInputModel> Items { get; set; }
     }
     

@@ -190,6 +190,11 @@ namespace TaskManagementApi.Data
             modelBuilder.Entity<DeviceComponent>()
                 .Property(c => c.ComponentName)
                 .IsRequired();
+            
+            modelBuilder.Entity<DeviceComponent>()
+                .Property(c => c.AssemblyTimeMinutes)
+                .IsRequired()
+                .HasDefaultValue(0);
 
             modelBuilder.Entity<DeviceComponent>()
                 .HasOne(c => c.Device)

@@ -17,6 +17,9 @@ namespace TaskManagementApi.Data.Models
         [Column("component_name")]
         public string ComponentName { get; set; }
 
+        [Column("assembly_time_minutes")]
+        public int AssemblyTimeMinutes { get; set; }
+        
         [ForeignKey("DeviceId")]
         public Device Device { get; set; }
 

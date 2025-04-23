@@ -20,7 +20,7 @@ namespace TaskManagementApi.Controllers
             _context = context;
         }
         
-                /// <summary>
+        /// <summary>
         /// Получение всех устройств
         /// </summary>
         [Route("GetAllDevices")]
@@ -65,6 +65,7 @@ namespace TaskManagementApi.Controllers
                         ComponentId = c.ComponentId,
                         ComponentName = c.ComponentName,
                         DeviceId = c.DeviceId,
+                        AssemblyTimeMinutes = c.AssemblyTimeMinutes,
                         Items = _context.ComponentItems
                             .Where(ci => ci.ComponentId == c.ComponentId)
                             .Include(ci => ci.Item)
@@ -146,7 +147,8 @@ namespace TaskManagementApi.Controllers
                 var component = new DeviceComponent
                 {
                     DeviceId = model.DeviceId,
-                    ComponentName = model.ComponentName
+                    ComponentName = model.ComponentName,
+                    AssemblyTimeMinutes = model.AssemblyTimeMinutes
                 };
                 _context.DeviceComponents.Add(component);
                 _context.SaveChanges();
@@ -208,6 +210,9 @@ namespace TaskManagementApi.Controllers
                 var component = _context.DeviceComponents.FirstOrDefault(c => c.ComponentId == componentId);
                 if (component == null)
                     return NotFound(new ApiResponseMessage("Компонент не найден"));
+                
+                if (model.AssemblyTimeMinutes.HasValue)
+                    component.AssemblyTimeMinutes = model.AssemblyTimeMinutes.Value;
 
                 component.ComponentName = model.ComponentName ?? component.ComponentName;
                 component.DeviceId = model.DeviceId ?? component.DeviceId;
